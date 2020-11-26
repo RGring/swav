@@ -39,6 +39,8 @@ class MultiCropDataset(datasets.ImageFolder):
         color_transform = [get_color_distortion(), RandomGaussianBlur()]
         if pil_blur:
             color_transform = [get_color_distortion(), PILRandomGaussianBlur()]
+
+        # These values are dependent on Dataset. ToDo: Replace for other datasets.
         mean = [0.485, 0.456, 0.406]
         std = [0.228, 0.224, 0.225]
         trans = []
@@ -59,6 +61,7 @@ class MultiCropDataset(datasets.ImageFolder):
     def __getitem__(self, index):
         path, _ = self.samples[index]
         image = self.loader(path)
+        # Generate different views for same image.
         multi_crops = list(map(lambda trans: trans(image), self.trans))
         if self.return_index:
             return index, multi_crops

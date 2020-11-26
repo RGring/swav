@@ -125,7 +125,7 @@ parser.add_argument("--seed", type=int, default=31, help="seed")
 
 def main():
     global args
-    args = parser.parse_args()
+    args = parser.parse_args(["@configs/flower.conf"])
     init_distributed_mode(args)
     fix_random_seeds(args.seed)
     logger, training_stats = initialize_exp(args, "epoch", "loss")
