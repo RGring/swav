@@ -34,7 +34,7 @@ import src.resnet50 as resnet_models
 
 logger = getLogger()
 
-parser = argparse.ArgumentParser(description="Implementation of SwAV")
+parser = argparse.ArgumentParser(description="Implementation of SwAV", fromfile_prefix_chars='@')
 
 #########################
 #### data parameters ####
@@ -139,6 +139,7 @@ def main():
         args.max_scale_crops,
         pil_blur=args.use_pil_blur,
     )
+
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
