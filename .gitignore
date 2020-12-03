@@ -1,2 +1,6 @@
 */__pycache__/
 experiments
+*.idea/
+venv
+log
+configs
