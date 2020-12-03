@@ -12,7 +12,7 @@ from logging import getLogger
 import urllib
 import json
 import shutil
-
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -24,6 +24,8 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 from torch.utils.tensorboard import SummaryWriter
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 from src.utils import (
     bool_flag,
@@ -38,8 +40,8 @@ import src.resnet50 as resnet_models
 
 logger = getLogger()
 
-
-parser = argparse.ArgumentParser(description="Evaluate models: Fine-tuning with 1% or 10% labels on ImageNet", fromfile_prefix_chars='@')
+parser = argparse.ArgumentParser(description="Evaluate models: Fine-tuning with 1% or 10% labels on ImageNet",
+                                 fromfile_prefix_chars='@')
 
 #########################
 #### main parameters ####
@@ -121,20 +123,31 @@ def main():
         tr_normalize = transforms.Normalize(
             mean=norm["mean"], std=norm["std"]
         )
-    train_dataset.transform = transforms.Compose([
-        transforms.RandomRotation(180),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomResizedCrop(224),
-        transforms.ToTensor(),
-        tr_normalize,
-    ])
-    val_dataset.transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        tr_normalize,
-    ])
+
+    train_albus = A.Compose(
+        [
+            A.Rotate(180),
+            A.RandomScale([0.5, 1.0]),
+            A.RGBShift(r_shift_limit=25, g_shift_limit=25, b_shift_limit=25),
+            A.HorizontalFlip(),
+            A.RandomCrop(width=224, height=224),
+            A.Normalize(mean=norm["mean"], std=norm["std"]),
+            ToTensorV2(),
+        ]
+    )
+    train_dataset.transform = lambda x: train_albus(image=np.array(x))
+
+    val_albus = A.Compose(
+        [
+            A.Resize(width=256, height=256),
+            A.CenterCrop(width=224, height=224),
+            A.Normalize(mean=norm["mean"], std=norm["std"]),
+            ToTensorV2(),
+        ]
+    )
+
+    val_dataset.transform = lambda x: val_albus(image=np.array(x))
+
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -245,7 +258,7 @@ def main():
         scheduler.step()
     logger.info("Fine-tuning with {}% of labels completed.\n"
                 "Test accuracies: top-1 {acc1:.1f}, top-5 {acc5:.1f}".format(
-                args.labels_perc, acc1=best_acc[0], acc5=best_acc[1]))
+        args.labels_perc, acc1=best_acc[0], acc5=best_acc[1]))
 
 
 def train(model, optimizer, loader, epoch, writer):
@@ -266,6 +279,7 @@ def train(model, optimizer, loader, epoch, writer):
     criterion = nn.CrossEntropyLoss().cuda()
 
     for iter_epoch, (inp, target) in enumerate(loader):
+        inp = inp["image"]
         iter = epoch * len(loader) + iter_epoch
 
         # measure data loading time
@@ -339,6 +353,7 @@ def validate_network(val_loader, model, writer, iter):
     with torch.no_grad():
         end = time.perf_counter()
         for i, (inp, target) in enumerate(val_loader):
+            inp = inp["image"]
 
             # move to gpu
             inp = inp.cuda(non_blocking=True)
