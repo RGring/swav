@@ -39,6 +39,8 @@ parser = argparse.ArgumentParser(description="Implementation of SwAV", fromfile_
 #########################
 #### data parameters ####
 #########################
+parser.add_argument("--argparse_file", type=str, default="",
+                    help="File where to store the argparse arguments")
 parser.add_argument("--data_path", type=str, default="/path/to/imagenet",
                     help="path to dataset repository")
 parser.add_argument("--nmb_crops", type=int, default=[2], nargs="+",
@@ -125,7 +127,8 @@ parser.add_argument("--seed", type=int, default=31, help="seed")
 
 def main():
     global args
-    args = parser.parse_args(["@configs/flower.conf"])
+    args = parser.parse_args()
+    args = parser.parse_args([f"@{args.argparse_file}"])
     init_distributed_mode(args)
     fix_random_seeds(args.seed)
     logger, training_stats = initialize_exp(args, "epoch", "loss")
