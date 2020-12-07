@@ -51,6 +51,21 @@ parser.add_argument("--min_scale_crops", type=float, default=[0.14], nargs="+",
                     help="argument in RandomResizedCrop (example: [0.14, 0.05])")
 parser.add_argument("--max_scale_crops", type=float, default=[1], nargs="+",
                     help="argument in RandomResizedCrop (example: [1., 0.14])")
+parser.add_argument("--aug_rotation_prob", type=float, default=0.5,
+                    help="Probability of applying RandomRotation (example: 0.5)")
+parser.add_argument("--aug_grey_prob", type=float, default=0.2,
+                    help="Probability of converting image to greyscale (example: 0.2)")
+parser.add_argument("--aug_gaussian_blur_prob", type=float, default=0.5,
+                    help="Probability of applying gaussian blur to image (example: 0.5)")
+parser.add_argument("--aug_jitter_prob", type=float, default=0.8,
+                    help="Probability of applying color jitter to image (example: 0.8)")
+parser.add_argument("--aug_jitter_vector", type=float, default=[0.2, 0.2, 0.2, 0.2], nargs="+",
+                    help="Color jitter values [brightness, contrast, saturation, hue] (example: [0.2, 0.2, 0.2, 0.2])")
+parser.add_argument("--aug_rgb_shift_prob", type=float, default=0.8,
+                    help="Probability of applying rgb shift to image (example: 0.8)")
+parser.add_argument("--aug_rgb_shift_vector", type=float, default=[25, 25, 25], nargs="+",
+                    help="Max RGB shift values [R, G, B] (example: [25, 25, 25])")
+
 parser.add_argument("--use_pil_blur", type=bool_flag, default=True,
                     help="""use PIL library to perform blur instead of opencv""")
 
@@ -134,14 +149,7 @@ def main():
     logger, training_stats = initialize_exp(args, "epoch", "loss")
 
     # build data
-    train_dataset = MultiCropDataset(
-        args.data_path,
-        args.size_crops,
-        args.nmb_crops,
-        args.min_scale_crops,
-        args.max_scale_crops,
-        pil_blur=args.use_pil_blur,
-    )
+    train_dataset = MultiCropDataset(args)
 
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     train_loader = torch.utils.data.DataLoader(
