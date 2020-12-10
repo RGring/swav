@@ -18,6 +18,7 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.optim
+import torch_optimizer as optim
 import apex
 from apex.parallel.LARC import LARC
 
@@ -181,11 +182,11 @@ def main():
     logger.info("Building model done.")
 
     # build optimizer
-    optimizer = torch.optim.SGD(
+    optimizer = optim.Ranger(
         model.parameters(),
         lr=args.base_lr,
-        momentum=0.9,
-        weight_decay=args.wd,
+        betas=(.95, .99),
+        eps=1e-4
     )
     optimizer = LARC(optimizer=optimizer, trust_coefficient=0.001, clip=False)
     warmup_lr_schedule = np.linspace(args.start_warmup, args.base_lr, len(train_loader) * args.warmup_epochs)
