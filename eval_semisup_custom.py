@@ -46,8 +46,6 @@ parser = argparse.ArgumentParser(description="Evaluate models: Fine-tuning with 
 #########################
 #### main parameters ####
 #########################
-parser.add_argument("--argparse_file", type=str, default="",
-                    help="File where to store the argparse arguments")
 parser.add_argument("--labels_perc", type=str, default="0.1",
                     help="fine-tune on either 1% or 10% of labels")
 parser.add_argument("--dump_path", type=str, default=".",
@@ -98,7 +96,6 @@ parser.add_argument("--local_rank", default=0, type=int,
 def main():
     global args, best_acc
     args = parser.parse_args()
-    args = parser.parse_args([f"@{args.argparse_file}"])
     init_distributed_mode(args)
     fix_random_seeds(args.seed)
     logger, training_stats = initialize_exp(
